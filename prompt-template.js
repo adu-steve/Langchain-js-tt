@@ -9,7 +9,11 @@ const model = new ChatOpenAI({
   temperature: 0.7,
 });
 
-const prompt = ChatPromptTemplate.fromTemplate(
-  "You're a comedian. Tell a joke based on the following word {word}"
-);
-console.log(await prompt.format({ word: "mouse" }));
+const prompt = ChatPromptTemplate.fromMessages([
+  ["system", "Generate a poem from the word provided by the user"],
+  ["human", "{input}"],
+]);
+
+const chain = prompt.pipe(model);
+const response = await chain.invoke({ input: "dragon" });
+console.log(response);
