@@ -5,6 +5,8 @@ import {
   StringOutputParser,
   CommaSeparatedListOutputParser,
 } from "@langchain/core/output_parsers";
+import { StructuredOutputParser } from "langchain/output_parsers";
+import { z } from "zod";
 
 dotenv.config();
 
@@ -13,34 +15,52 @@ const model = new ChatOpenAI({
   temperature: 0.7,
 });
 //a function of stringOutput Parser
-// async function callStringOutputParser() {
-//   const prompt = ChatPromptTemplate.fromMessages([
-//     ["system", "Generate a poem from the word provided by the user"],
-//     ["human", "{input}"],
-//   ]);
+async function callStringOutputParser() {
+  const prompt = ChatPromptTemplate.fromMessages([
+    ["system", "Generate a love anthem from the word provided by the user"],
+    ["human", "{input}"],
+  ]);
 
-//   const parser = new StringOutputParser();
+  const parser = new StringOutputParser();
 
-//   const chain = prompt.pipe(model).pipe(parser);
-
-//   return await chain.invoke({ input: "dragon" });
-// }
-
-async function callCommaSeparatedOutputParser() {
-  const prompt = ChatPromptTemplate.fromTemplate(
-    "Generate five synonyms from the word {input}"
-  );
-
-  const stringOutputParser = new StringOutputParser();
-  const listoutputparser = new CommaSeparatedListOutputParser();
-
-  const chain = prompt
-    .pipe(model)
-    .pipe(stringOutputParser)
-    .pipe(listoutputparser);
+  const chain = prompt.pipe(model).pipe(parser);
 
   return await chain.invoke({ input: "dragon" });
 }
+// a function of the list or comma seperated output parser.
+async function callCommaSeparatedOutputParser() {
+  const prompt = ChatPromptTemplate.fromTemplate(
+    "Generate five synonyms from the word {input} separated by commas"
+  );
 
-const response = await callCommaSeparatedOutputParser();
+  const listoutputparser = new CommaSeparatedListOutputParser();
+
+  const chain = prompt.pipe(model).pipe(listoutputparser);
+  return await chain.invoke({ input: "dragon" });
+}
+
+//a function for production based for outputting a parser called StructuredOutputParser
+async function callStructuredParser() {
+  const prompt = ChatPromptTemplate.fromTemplate(
+    `Extract information from the following phrase 
+    Formatting-Instructions :{format_instructions}
+    Phrase:{phrase}`
+  );
+
+  const outputParser = StructuredOutputParser.fromNamesAndDescriptions({
+    name: "the name of the person",
+    age: "the age of the person",
+  });
+  const chain = prompt.pipe(model).pipe(outputParser);
+
+  return await chain.invoke({
+    phrase: "Stephen is 30 years old.",
+    format_instructions: outputParser.getFormatInstructions(),
+  });
+}
+
+//Another structured output parser using the zod Schema
+
+// const response = await callCommaSeparatedOutputParser();
+const response = await callStructuredParser();
 console.log(response);
