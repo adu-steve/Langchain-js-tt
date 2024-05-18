@@ -60,7 +60,26 @@ async function callStructuredParser() {
 }
 
 //Another structured output parser using the zod Schema
+const callZodOutputParser = async () => {
+  const prompt = ChatPromptTemplate.fromTemplate(
+    `Extract information from the following phrase 
+    Formatting-Instructions :{format_instructions}
+    Phrase:{phrase}`
+  );
 
-// const response = await callCommaSeparatedOutputParser();
-const response = await callStructuredParser();
+  const zodOutputParser = StructuredOutputParser.fromZodSchema(
+    z.object({
+      name: z.string().describe("name of the recipe"),
+      ingredients: z.array(z.string().describe("ingredients of of the recipe")),
+    })
+  );
+  const chain = prompt.pipe(model).pipe(zodOutputParser);
+
+  return await chain.invoke({
+    phrase:
+      "I made cheese burger with the ingredients tomato, cheese, beef and flour",
+    format_instructions: zodOutputParser.getFormatInstructions(),
+  });
+};
+const response = await callZodOutputParser();
 console.log(response);
