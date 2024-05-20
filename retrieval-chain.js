@@ -3,6 +3,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import * as dotenv from "dotenv";
 import { Document } from "@langchain/core/documents";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import { CheerioWebBaseLoader } from "langchain/document_loaders/web/cheerio";
 
 dotenv.config({});
 
