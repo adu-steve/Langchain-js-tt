@@ -1,12 +1,12 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import * as dotenv from "dotenv";
-import { Document } from "@langchain/core/documents";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { CheerioWebBaseLoader } from "langchain/document_loaders/web/cheerio";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { createRetrievalChain } from "langchain/chains/retrieval";
 dotenv.config({});
 
 const model = new ChatOpenAI({
@@ -26,7 +26,7 @@ const cheerio = new CheerioWebBaseLoader(
 const docs = await cheerio.load();
 
 const splitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 200,
+  chunkSize: 400,
   chunkOverlap: 20,
 });
 
@@ -34,13 +34,27 @@ const splitDocs = await splitter.splitDocuments(docs);
 
 const embeddings = new OpenAIEmbeddings();
 
+const vectorStore = await MemoryVectorStore.fromDocuments(
+  splitDocs,
+  embeddings
+);
+
+const retriever = vectorStore.asRetriever({
+  k: 3,
+});
+
 //const chain = prompt.pipe(model);
 const chain = await createStuffDocumentsChain({
   llm: model,
   prompt,
 });
-const response = await chain.invoke({
-  input: "What is LCEL?",
-  context: docs,
+
+const retrievalChain = await createRetrievalChain({
+  combineDocsChain: chain,
+  retriever,
 });
-//console.log(docs[0].pageContent.length);
+const response = await retrievalChain.invoke({
+  input:
+    "Can you teach me about what LCEL is and what I can do to understand it better",
+});
+console.log(response.answer);
