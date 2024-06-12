@@ -9,6 +9,7 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { MessagesPlaceholder } from "@langchain/core/prompts";
+import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
 dotenv.config();
 
 //creating a vectorStore function
@@ -42,14 +43,12 @@ const createChain = async () => {
     temperature: 0.7,
   });
 
-  const prompt = ChatPromptTemplate.fromMessages(
-    [
-      "system",
-      "Answer the user's questions based on the following context:{context}",
-    ],
-    new MessagesPlaceholder("{chats_history}"),
-    ["user", "{input}"]
-  );
+  const prompt = ChatPromptTemplate.fromMessages([
+    ("system",
+    "Answer the user's questions based on the following context:{context}"),
+    new MessagesPlaceholder("chathistory"),
+    ("user", "{input}"),
+  ]);
 
   const chain = await createStuffDocumentsChain({
     llm: model,
@@ -71,16 +70,17 @@ const createChain = async () => {
 const vectorStore = await createVectoreStore();
 const chain = await createChain(vectorStore);
 
-const chatHistory = [
+const chat = [
   new HumanMessage("Hello"),
-  new AIMessage("Hello, greetings to you"),
+  new AIMessage("Hi, how can I help you?"),
   new HumanMessage("My name is Stephen"),
-  new AIMessage("How can I help you?"),
-  new HumanMessage("I want you to give me the weather situation in Ghana here"),
+  new AIMessage("Hi Stephen, how can I help you?"),
+  new HumanMessage("The weather in Ghana is very hot"),
+  new AIMessage("LCEL stands for Langchain Expression Language"),
 ];
 
 const response = await chain.invoke({
-  input: "What is my name in the history?",
-  chats_history: chatHistory,
+  input: "What did I say about the weather in Ghana?",
+  chathistory: chat,
 });
 console.log(response);
