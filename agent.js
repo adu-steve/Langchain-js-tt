@@ -8,7 +8,31 @@ import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
 import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
 import readline from "readline";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { TextLoader } from "langchain/document_loaders/fs/text";
+import { createRetrieverTool } from "langchain/tools/retriever";
 dotenv.config();
+
+const loader = new TextLoader("./docs/alice_wonderland.txt");
+const docs = await loader.load();
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 50,
+});
+const splitDocs = await splitter.splitDocuments(docs);
+
+const embeddings = new OpenAIEmbeddings();
+
+const vectorStore = await MemoryVectorStore.fromDocuments(
+  splitDocs,
+  embeddings
+);
+
+const retriever = vectorStore.asRetriever({
+  k: 2,
+});
 
 const model = new ChatOpenAI({
   modelName: "gpt-3.5-turbo-1106",
@@ -24,7 +48,12 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 //CERATE AND ASSIGN TOOLS
 const searchTool = new TavilySearchResults();
-const tools = [searchTool];
+const retrieverTool = new createRetrieverTool(retriever, {
+  name: "DocumentLoaders",
+  description:
+    "Use this tool whenever a question on alice in wonderland is asked and any relevant question in which answers can be derived from it",
+});
+const tools = [searchTool, retrieverTool];
 //create agent
 const agent = await createOpenAIFunctionsAgent({
   llm: model,
