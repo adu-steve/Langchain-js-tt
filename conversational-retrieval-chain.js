@@ -58,10 +58,23 @@ const createChain = async () => {
   const retriever = vectorStore.asRetriever({
     k: 2,
   });
+  const retrieverPrompt = ChatPromptTemplate.fromMessages([
+    new MessagesPlaceholder("chathistory"),
+    ["user", "{input}"],
+    [
+      "user",
+      "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation",
+    ],
+  ]);
+  const historyAwareRetriever = await createHistoryAwareRetriever({
+    llm: model,
+    retriever,
+    rephrasePrompt: retrieverPrompt,
+  });
 
   const conversationChain = await createRetrievalChain({
     combineDocsChain: chain,
-    retriever,
+    retriever: historyAwareRetriever,
   });
 
   return conversationChain;
@@ -75,12 +88,12 @@ const chat = [
   new AIMessage("Hi, how can I help you?"),
   new HumanMessage("My name is Stephen"),
   new AIMessage("Hi Stephen, how can I help you?"),
-  new HumanMessage("The weather in Ghana is very hot"),
+  new HumanMessage("What is LCEL"),
   new AIMessage("LCEL stands for Langchain Expression Language"),
 ];
 
 const response = await chain.invoke({
-  input: "What did I say about the weather in Ghana?",
+  input: "What was my recent question I asked?",
   chathistory: chat,
 });
 console.log(response);

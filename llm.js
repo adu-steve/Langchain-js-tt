@@ -8,7 +8,8 @@ const model = new ChatOpenAI({
   temperature: 0.7,
   maxTokens: 1000,
   verbose: true,
+  streaming: true,
 });
 
 const response = await model.invoke("Write a poem about AI");
-console.log(response);
+console.log(response.content);

@@ -8,14 +8,14 @@ import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
 import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
 import readline from "readline";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { createRetrieverTool } from "langchain/tools/retriever";
 dotenv.config();
 
-const loader = new PDFLoader("./docs/se compiled.pdf", "./docs/rovers.pdf", {
+const loader = new PDFLoader("./docs/rovers.pdf", {
   splitPages: false,
 });
 
@@ -32,6 +32,7 @@ const retriever = vectorStore.asRetriever({
 const model = new ChatOpenAI({
   modelName: "gpt-3.5-turbo-1106",
   temperature: 0.7,
+  streaming: true,
 });
 
 const prompt = ChatPromptTemplate.fromMessages([
@@ -76,7 +77,7 @@ const askQuestion = () => {
       rl.close();
       return;
     }
-    const response = await agentExecutor.invoke({
+    const response = await agentExecutor.stream({
       input: input,
       chat_history: chathistory,
     });

@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { BufferMemory } from "langchain/memory";
 import { ConversationChain } from "langchain/chains";
+import { UpstashRedisChatMessageHistory } from "@langchain/community/stores/message/upstash_redis";
 
 dotenv.config();
 
@@ -16,8 +17,16 @@ You are an AI Assistant.
 {history}
 {input}`);
 
+const upstashChatHistory = new UpstashRedisChatMessageHistory({
+  sessionId: "chat1",
+  config: {
+    url: "https://delicate-shepherd-53256.upstash.io",
+    token: "AdAIAAIncDExYmVkNGY3Nzc4NWI0YmIxOThmZWNhMGU1NmI0ZWE0ZXAxNTMyNTY",
+  },
+});
 const memory = new BufferMemory({
   memoryKey: "history",
+  chatHistory: upstashChatHistory,
 });
 
 const chain = new ConversationChain({
@@ -26,14 +35,7 @@ const chain = new ConversationChain({
   memory,
 });
 
-console.log(await memory.loadMemoryVariables());
-const input1 = { input: "The passphrase is HelloWorld" };
-
-const response1 = await chain.invoke(input1);
-console.log(response1);
-
-console.log(await memory.loadMemoryVariables());
-const input2 = { input: "The passphrase is what?" };
+const input2 = { input: "What was the question I just asked?" };
 
 const response2 = await chain.invoke(input2);
 console.log(response2);
